@@ -13,7 +13,7 @@ For the source adaptation, read `references/openai-debate-adaptation.md` when th
 
 ## Core Rule
 
-Do not produce a loose transcript. Produce a decision-ready review: the current path, the best objection, the best alternative, the evidence that matters, the caller-aware external judge's view when requested, the judge-of-judge verdict, and the cheapest next check if uncertainty remains.
+Do not produce a loose transcript. Produce a decision-ready review: the current path, the best objection, the best alternative, the evidence that matters, any real external judge's view when available, the judge-of-judge verdict, and the cheapest next check if uncertainty remains. The skill must work without any companion skills installed.
 
 ## Workflow
 
@@ -44,15 +44,16 @@ Do not produce a loose transcript. Produce a decision-ready review: the current 
 6. Select the external judge when requested.
    - Use this step when the user asks for Claude, Codex, an external judge, a second model, or a judge-of-judge workflow.
    - First identify the caller context from the runtime, system context, user request, or surrounding toolchain. The caller is the model currently executing this skill, not the subject being discussed. Record it as `caller_model` when it is known.
-   - Check which external judge skills are available before committing to a route. Do not assume `call-claude` or `call-codex` is installed.
-   - If the caller is Codex, OpenAI, or GPT-family, prefer Claude via the `call-claude` skill when available.
-   - If the caller is Claude or Anthropic-family, prefer Codex via the `call-codex` skill when available.
-   - If the caller is unknown, choose by decision type: prefer Claude for taste, design, writing, product judgment, UX, brand, narrative, naming, and human-preference questions; prefer Codex for deep logic, algorithms, correctness, invariants, architecture, debugging, tests, edge cases, data flow, concurrency, security, performance, and proof-like technical decisions.
-   - If the preferred external judge skill is unavailable but the other cross-model judge is available and not the same model family as the caller, use the available cross-model judge and state the fallback.
+   - Check for real external-judge mechanisms before committing to a route. Examples include host-provided tools, local authenticated CLIs, user-provided external output, or optional companion skills such as `call-claude` and `call-codex`. Do not assume any of these are installed.
+   - If the caller is Codex, OpenAI, or GPT-family, prefer a Claude/Anthropic-family external judge when a real mechanism is available.
+   - If the caller is Claude or Anthropic-family, prefer a Codex/OpenAI-family external judge when a real mechanism is available.
+   - If the caller is unknown, choose by decision type: prefer a Claude/Anthropic-family judge for taste, design, writing, product judgment, UX, brand, narrative, naming, and human-preference questions; prefer a Codex/OpenAI-family judge for deep logic, algorithms, correctness, invariants, architecture, debugging, tests, edge cases, data flow, concurrency, security, performance, and proof-like technical decisions.
+   - If the preferred external judge family is unavailable but another cross-model judge is available and not the same model family as the caller, use the available cross-model judge and state the fallback.
    - If the user explicitly names the external judge, honor that request unless the tool is unavailable.
-   - If no suitable external judge skill is available, state that it is unavailable and continue with the internal judge-of-judge rather than pretending to have cross-model signal.
+   - If no suitable external judge mechanism is available, state that it is unavailable and continue with the internal judge-of-judge rather than pretending to have cross-model signal.
 
 7. Call the selected external judge.
+   - Use the environment's best available adapter. Optional companion skills are convenient adapters, not dependencies of this skill.
    - Send a compact evidence bundle with the current path, Defender case, Challenger case, verification evidence, constraints, caller context, routing reason, and requested output contract.
    - Ask the external judge to judge the decision, not to continue the debate.
    - Treat the external judge's response as evidence for the final judge, not as the final answer.
@@ -96,6 +97,8 @@ You are the Judge. Decide between the current path, a modified version, the alte
 
 You are the first external judge. Review the current path, Defender case, Challenger case, caller context, routing reason, and verification evidence. Bring a different angle where useful, but stay grounded in the supplied evidence. Decide keep, modify, replace, or investigate. Return the strongest missed risk, best concrete alternative, confidence, and the evidence that most affected your view.
 
+Use this generic prompt when the selected external judge is not specifically Claude or Codex.
+
 ### Claude External Judge
 
 You are Claude acting as the first external judge. Review the current path, Defender case, Challenger case, caller context, routing reason, and verification evidence. Bring taste, product, writing, UX, strategic, and human-preference nuance where relevant, but stay grounded in the supplied evidence. Decide keep, modify, replace, or investigate. Return the strongest missed risk, best concrete alternative, confidence, and the evidence that most affected your view.
@@ -136,7 +139,7 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 <strongest evidence-backed objection and concrete alternative>
 
 **External Judge**
-<caller context, availability check, selected model/tool, routing reason, verdict, and strongest useful point; write "not used" if unavailable or not requested>
+<caller context, available external-judge mechanisms, selected model/tool if any, routing reason, verdict, and strongest useful point; write "not used" if unavailable or not requested>
 
 **Judge-of-Judge**
 <assessment of the external judge's feedback against the evidence, including what changed or did not change>
@@ -154,7 +157,8 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 - Do not let the Defender claim "existing behavior" is enough without evidence that the behavior is intentional and complete.
 - Do not let the Judge decide from confidence, polish, length, or first-position advantage.
 - Do not route to the same model family as the caller when a cross-model external judge is available.
-- Do not pretend the companion skill exists. Check availability before invoking or promising `call-claude` or `call-codex`.
+- Do not make companion skills a hard dependency. This published skill must remain self-contained.
+- Do not pretend an external adapter exists. Check availability before invoking or promising a tool, CLI, host capability, or optional companion skill.
 - Do not hide the routing basis. If caller context is unknown, say which domain heuristic selected the judge.
 - Do not let an external judgment override direct evidence or tool-verifiable checks.
 - Do not discard external feedback just because it disagrees with the caller; first identify whether it found a real crux.
