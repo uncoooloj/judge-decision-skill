@@ -13,7 +13,7 @@ For the source adaptation, read `references/openai-debate-adaptation.md` when th
 
 ## Core Rule
 
-Do not produce a loose transcript. Produce a decision-ready review: the current path, the best objection, the best alternative, the evidence that matters, any real external judge's view when available, the judge-of-judge verdict, and the cheapest next check if uncertainty remains. The skill must work without any companion skills installed.
+Do not produce a loose transcript. Produce a decision-ready review: the current path, the best objection, the best alternative, the evidence that matters, any real external judge's view when available, what that judge changed, the judge-of-judge verdict, decision status, and the cheapest next check if uncertainty remains. The skill must work without any companion skills installed.
 
 ## Example Triggers
 
@@ -36,11 +36,14 @@ Do not produce a loose transcript. Produce a decision-ready review: the current 
    - State the decision to make: keep, modify, replace, or investigate.
    - Define success criteria and constraints: correctness, latency, throughput, cost, maintainability, explainability, product behavior, migration risk, or other user priorities.
    - Identify the real unit of analysis before gathering broad evidence.
+   - Set a decision status target: Settled, Provisional, or Blocked.
 
 2. Gather the evidence bundle.
    - Inspect relevant code, tests, logs, specs, traces, data shapes, benchmarks, or production behavior before debating.
    - Keep evidence separate from inference.
    - Prefer direct measurements and executable checks over model opinion when a claim is testable.
+   - If evidence is thin, say what is missing and whether the decision can still be provisional.
+   - Keep the bundle compact enough that each judge sees the same cruxes, not an undifferentiated dump.
 
 3. Run independent first passes.
    - The Defender argues the strongest truthful case for the path taken.
@@ -77,6 +80,7 @@ Do not produce a loose transcript. Produce a decision-ready review: the current 
    - Identify where the external judge added a genuinely new angle, where it repeated known points, and where it made unsupported assumptions.
    - Verify any testable claim from the external judge before adopting it when feasible.
    - Decide whether the external judgment changes the outcome, changes only the next check, or should be rejected.
+   - Classify the effect as: changed verdict, changed next check, added useful risk, repeated known points, unsupported, or not used.
 
 9. Judge with a rubric.
    - Score the arguments against the user's stated priorities, not against eloquence or confidence.
@@ -90,6 +94,7 @@ Do not produce a loose transcript. Produce a decision-ready review: the current 
    - Include the external judge result, selected model, routing reason, and judge-of-judge assessment when an external judge was used.
    - State the recommended next action.
    - Include residual uncertainty only where it changes the next step.
+   - End with decision status: Settled, Provisional, or Blocked.
 
 ## Role Prompts
 
@@ -125,6 +130,39 @@ You are Codex acting as the first external judge. Review the current path, Defen
 
 You are the final judge-of-judge. Evaluate the selected external judge's judgment alongside the Defender, Challenger, and verification evidence. Decide what the external judge got right, what it missed or assumed, whether it changed the decision, and what the final action should be.
 
+## Evidence Bundle Template
+
+Use this structure before debating when the input is messy:
+
+```markdown
+**Decision**
+<what must be decided>
+
+**Current Path**
+<current approach>
+
+**Alternatives Known**
+<candidate alternatives or "unknown">
+
+**Constraints**
+<business, product, technical, operational, timeline>
+
+**Evidence**
+<facts with anchors>
+
+**Open Questions**
+<unknowns that affect the decision>
+
+**Cheap Checks**
+<tests, queries, benchmarks, traces, or inspections>
+```
+
+## Decision Status
+
+- **Settled**: the evidence is strong enough to act without another discriminating check.
+- **Provisional**: the current best call is clear, but one cheap check, missing measurement, or implementation detail could change the decision.
+- **Blocked**: required evidence, access, context, or a requested external judge is unavailable and guessing would be risky.
+
 ## Default Rubric
 
 Adjust weights when the user gives priorities.
@@ -155,6 +193,9 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 **External Judge**
 <caller context, available external-judge mechanisms, selected model/tool if any, routing reason, verdict, and strongest useful point; write "not used" if unavailable or not requested>
 
+**What External Judge Changed**
+Changed verdict / Changed next check / Added useful risk / Repeated known points / Unsupported / Not used: <one-sentence explanation>
+
 **Judge-of-Judge**
 <assessment of the external judge's feedback against the evidence, including what changed or did not change>
 
@@ -163,6 +204,9 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 
 **Next Check**
 <specific test, benchmark, log query, code inspection, or experiment; omit only when the verdict is already fully supported>
+
+**Decision Status**
+Settled / Provisional / Blocked: <why>
 ```
 
 ## Failure Modes
@@ -176,5 +220,6 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 - Do not hide the routing basis. If caller context is unknown, say which domain heuristic selected the judge.
 - Do not let an external judgment override direct evidence or tool-verifiable checks.
 - Do not discard external feedback just because it disagrees with the caller; first identify whether it found a real crux.
+- Do not treat a provisional decision as settled just because the arguments sound confident.
 - Do not continue debate rounds after the disagreement has become testable.
 - Do not bury the decision below the debate details.
