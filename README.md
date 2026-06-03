@@ -96,6 +96,7 @@ The final answer should lead with the verdict, not bury it under debate notes:
 - `SKILL.md` - the skill instructions and output contract
 - `agents/openai.yaml` - Codex UI metadata
 - `references/openai-debate-adaptation.md` - source framing and adaptation notes
+- `references/issue-pr-register.md` - improvement issue and grouped PR map
 
 ## License
 
