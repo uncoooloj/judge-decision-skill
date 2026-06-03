@@ -51,12 +51,14 @@ Do not produce a loose transcript. Produce a decision-ready review: the current 
    - If the preferred external judge family is unavailable but another cross-model judge is available and not the same model family as the caller, use the available cross-model judge and state the fallback.
    - If the user explicitly names the external judge, honor that request unless the tool is unavailable.
    - If no suitable external judge mechanism is available, state that it is unavailable and continue with the internal judge-of-judge rather than pretending to have cross-model signal.
+   - Never simulate Claude, Codex, or another model when the user requested a real external judge. Mark the external judge as unavailable instead.
 
 7. Call the selected external judge.
    - Use the environment's best available adapter. Optional companion skills are convenient adapters, not dependencies of this skill.
    - Send a compact evidence bundle with the current path, Defender case, Challenger case, verification evidence, constraints, caller context, routing reason, and requested output contract.
    - Ask the external judge to judge the decision, not to continue the debate.
    - Treat the external judge's response as evidence for the final judge, not as the final answer.
+   - Use the External Judge Prompt Template below unless the adapter requires a different envelope.
 
 8. Run the judge-of-judge.
    - Compare the Defender, Challenger, verification evidence, and external judge's judgment.
@@ -111,6 +113,57 @@ You are Codex acting as the first external judge. Review the current path, Defen
 
 You are the final judge-of-judge. Evaluate the selected external judge's judgment alongside the Defender, Challenger, and verification evidence. Decide what the external judge got right, what it missed or assumed, whether it changed the decision, and what the final action should be.
 
+## External Judge Prompt Template
+
+Use this template when calling a real external judge through Claude CLI, Codex CLI, a host tool, or another authenticated adapter:
+
+```markdown
+You are the first external judge in a judged decision workflow.
+
+Question to decide:
+<keep / modify / replace / investigate decision>
+
+Caller context:
+<current model family if known, why an external judge was requested, and why this judge was selected>
+
+Current path:
+<path, plan, hypothesis, design, or algorithm>
+
+Success criteria and constraints:
+<priorities, non-negotiables, tradeoffs, and user constraints>
+
+Evidence bundle:
+<code anchors, logs, tests, metrics, specs, screenshots, traces, observed behavior, or "thin evidence">
+
+Defender case:
+<strongest case for the current path>
+
+Challenger case:
+<strongest case against it and concrete alternative>
+
+Verification evidence:
+<checks already run, checks unavailable, or cheapest next check>
+
+Return exactly:
+**External Judge Verdict**
+<Keep / Modify / Replace / Investigate>
+
+**Why**
+<evidence-based reasoning>
+
+**Strongest Missed Risk**
+<risk or "none">
+
+**Best Alternative**
+<concrete alternative or "none">
+
+**What Would Change Your Mind**
+<specific evidence or test>
+
+**Confidence**
+<low / medium / high, plus why>
+```
+
 ## Default Rubric
 
 Adjust weights when the user gives priorities.
@@ -159,6 +212,7 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 - Do not route to the same model family as the caller when a cross-model external judge is available.
 - Do not make companion skills a hard dependency. This published skill must remain self-contained.
 - Do not pretend an external adapter exists. Check availability before invoking or promising a tool, CLI, host capability, or optional companion skill.
+- Do not simulate an external judge when a real cross-model call was requested.
 - Do not hide the routing basis. If caller context is unknown, say which domain heuristic selected the judge.
 - Do not let an external judgment override direct evidence or tool-verifiable checks.
 - Do not discard external feedback just because it disagrees with the caller; first identify whether it found a real crux.
