@@ -1,4 +1,4 @@
 interface:
   display_name: "Judge Decision"
-  short_description: "Debate paths into decisions"
-  default_prompt: "Use $judge-decision to challenge this path, use an external judge if available, and produce a final decision."
+  short_description: "Turn hard choices into judged decisions"
+  default_prompt: "Use $judge-decision to help decide, challenge this path, use an external judge if available, and produce a final decision."
