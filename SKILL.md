@@ -1,19 +1,33 @@
 ---
 name: judge-decision
-description: Run an OpenAI-debate-inspired judged decision workflow for an algorithm, ranking strategy, architecture path, heuristic, optimization, data pipeline, implementation approach, product decision, or technical plan. Use when the user asks to challenge the path taken, argue against an approach, compare competing approaches, appoint a judge, use Claude or Codex as an external judge, run a judge-of-judge workflow, run a devil's-advocate review, find a better route, or make a decision where one plausible path may hide correctness, complexity, scaling, maintainability, product, or operational risks.
+description: Run an OpenAI-debate-inspired judged decision workflow for technical, product, architecture, algorithm, ranking, data, debugging, implementation, or planning choices. Use when the user asks to help decide, challenge a path, argue against an approach, compare competing approaches, sanity-check a plan, appoint a judge, call Claude or Codex as an external judge, run a judge-of-judge workflow, run a devil's-advocate review, find a better route, identify what they are missing, or make a decision where one plausible path may hide correctness, complexity, scaling, maintainability, product, user, operational, or evidence risks.
 ---
 
 # Judge Decision
 
 ## Overview
 
-Use this skill to stress-test a technical or product path before committing to it. The operating model is based on OpenAI's debate framing: make the hard decision easier for a judge by forcing opposing agents to expose the strongest evidence, assumptions, counterexamples, and concrete alternatives.
+Use this skill to turn a hard choice into a decision record. The operating model is based on OpenAI's debate framing: make the hard decision easier for a judge by forcing opposing agents to expose the strongest evidence, assumptions, counterexamples, and concrete alternatives.
 
 For the source adaptation, read `references/openai-debate-adaptation.md` when the user asks why this protocol works, wants to modify the protocol, or needs a more formal debate setup.
 
 ## Core Rule
 
 Do not produce a loose transcript. Produce a decision-ready review: the current path, the best objection, the best alternative, the evidence that matters, any real external judge's view when available, the judge-of-judge verdict, and the cheapest next check if uncertainty remains. The skill must work without any companion skills installed.
+
+## Example Triggers
+
+- "Use $judge-decision to decide whether this ranking algorithm should stay."
+- "Challenge this architecture path and bring in an external judge if one is available."
+- "I think this debugging hypothesis is right. What am I missing?"
+- "Compare these two implementation approaches and make the call."
+- "Run a judge-of-judge on Claude's feedback before we decide."
+
+## Decision Modes
+
+- **Standard**: Use when no external judge is requested or available. Run Defender, Challenger, verification, and final judge.
+- **External-judge assisted**: Use when the user asks for Claude, Codex, a second model, or a judge-of-judge. Route to a real cross-model judge when available, then assess that feedback in the final judge-of-judge.
+- **Fast path**: Use when the user needs a quick call. Still require a concrete objection, one alternative, the decisive evidence, and the cheapest next check.
 
 ## Workflow
 
