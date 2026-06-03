@@ -43,12 +43,14 @@ Do not produce a loose transcript. Produce a decision-ready review: the current 
 
 6. Select the external judge when requested.
    - Use this step when the user asks for Claude, Codex, an external judge, a second model, or a judge-of-judge workflow.
-   - First identify the caller context from the runtime, system context, user request, or surrounding toolchain. Record it as `caller_model` when it is known.
-   - If the caller is Codex, OpenAI, or GPT-family, prefer Claude via the `call-claude` skill.
-   - If the caller is Claude or Anthropic-family, prefer Codex via the `call-codex` skill.
-   - If the caller is unknown, choose by decision type: use Claude for taste, design, writing, product judgment, UX, brand, narrative, naming, and human-preference questions; use Codex for deep logic, algorithms, correctness, invariants, architecture, debugging, tests, edge cases, data flow, concurrency, security, performance, and proof-like technical decisions.
+   - First identify the caller context from the runtime, system context, user request, or surrounding toolchain. The caller is the model currently executing this skill, not the subject being discussed. Record it as `caller_model` when it is known.
+   - Check which external judge skills are available before committing to a route. Do not assume `call-claude` or `call-codex` is installed.
+   - If the caller is Codex, OpenAI, or GPT-family, prefer Claude via the `call-claude` skill when available.
+   - If the caller is Claude or Anthropic-family, prefer Codex via the `call-codex` skill when available.
+   - If the caller is unknown, choose by decision type: prefer Claude for taste, design, writing, product judgment, UX, brand, narrative, naming, and human-preference questions; prefer Codex for deep logic, algorithms, correctness, invariants, architecture, debugging, tests, edge cases, data flow, concurrency, security, performance, and proof-like technical decisions.
+   - If the preferred external judge skill is unavailable but the other cross-model judge is available and not the same model family as the caller, use the available cross-model judge and state the fallback.
    - If the user explicitly names the external judge, honor that request unless the tool is unavailable.
-   - If the selected external judge skill is unavailable, state that it is unavailable and continue with the internal judge-of-judge rather than pretending to have cross-model signal.
+   - If no suitable external judge skill is available, state that it is unavailable and continue with the internal judge-of-judge rather than pretending to have cross-model signal.
 
 7. Call the selected external judge.
    - Send a compact evidence bundle with the current path, Defender case, Challenger case, verification evidence, constraints, caller context, routing reason, and requested output contract.
@@ -134,7 +136,7 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 <strongest evidence-backed objection and concrete alternative>
 
 **External Judge**
-<caller context, selected model/tool, routing reason, verdict, and strongest useful point; write "not used" if unavailable or not requested>
+<caller context, availability check, selected model/tool, routing reason, verdict, and strongest useful point; write "not used" if unavailable or not requested>
 
 **Judge-of-Judge**
 <assessment of the external judge's feedback against the evidence, including what changed or did not change>
@@ -152,6 +154,7 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 - Do not let the Defender claim "existing behavior" is enough without evidence that the behavior is intentional and complete.
 - Do not let the Judge decide from confidence, polish, length, or first-position advantage.
 - Do not route to the same model family as the caller when a cross-model external judge is available.
+- Do not pretend the companion skill exists. Check availability before invoking or promising `call-claude` or `call-codex`.
 - Do not hide the routing basis. If caller context is unknown, say which domain heuristic selected the judge.
 - Do not let an external judgment override direct evidence or tool-verifiable checks.
 - Do not discard external feedback just because it disagrees with the caller; first identify whether it found a real crux.

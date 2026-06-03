@@ -19,6 +19,13 @@ When an external judge is requested, the skill now routes by caller context firs
 - Claude/Anthropic callers prefer Codex via `call-codex`
 - unknown callers fall back to the decision type: Claude for taste/design/product judgment, Codex for deep logic/correctness/implementation rigor
 
+To get the full cross-model behavior, install both companion skills:
+
+- `call-claude`
+- `call-codex`
+
+If only one or neither is installed, `judge-decision` should say what is unavailable and continue with the internal judge-of-judge. It should not simulate an external judge or hide the missing dependency.
+
 ## Install
 
 Copy this folder into your Codex skills directory:
