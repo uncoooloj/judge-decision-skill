@@ -1,6 +1,6 @@
 ---
 name: judge-decision
-description: Run an OpenAI-debate-inspired judged decision workflow for an algorithm, ranking strategy, architecture path, heuristic, optimization, data pipeline, implementation approach, product decision, or technical plan. Use when the user asks to challenge the path taken, argue against an approach, compare competing approaches, appoint a judge, use Claude as an external judge, run a judge-of-judge workflow, run a devil's-advocate review, find a better route, or make a decision where one plausible path may hide correctness, complexity, scaling, maintainability, product, or operational risks.
+description: Run an OpenAI-debate-inspired judged decision workflow for an algorithm, ranking strategy, architecture path, heuristic, optimization, data pipeline, implementation approach, product decision, or technical plan. Use when the user asks to challenge the path taken, argue against an approach, compare competing approaches, appoint a judge, use Claude or Codex as an external judge, run a judge-of-judge workflow, run a devil's-advocate review, find a better route, or make a decision where one plausible path may hide correctness, complexity, scaling, maintainability, product, or operational risks.
 ---
 
 # Judge Decision
@@ -13,7 +13,7 @@ For the source adaptation, read `references/openai-debate-adaptation.md` when th
 
 ## Core Rule
 
-Do not produce a loose transcript. Produce a decision-ready review: the current path, the best objection, the best alternative, the evidence that matters, the external judge's view when requested, the judge-of-judge verdict, and the cheapest next check if uncertainty remains.
+Do not produce a loose transcript. Produce a decision-ready review: the current path, the best objection, the best alternative, the evidence that matters, the caller-aware external judge's view when requested, the judge-of-judge verdict, and the cheapest next check if uncertainty remains.
 
 ## Workflow
 
@@ -41,29 +41,36 @@ Do not produce a loose transcript. Produce a decision-ready review: the current 
    - Run or propose focused tests, counterexamples, complexity analysis, benchmark slices, schema checks, simulations, or trace inspections.
    - If verification cannot be done in the current turn, specify the exact command, fixture, metric, or experiment that would discriminate between the paths.
 
-6. Optionally call Claude as first judge.
-   - Use this step when the user asks for Claude, an external judge, a second model, or a judge-of-judge workflow.
-   - Use the `call-claude` skill if it is available.
-   - Send Claude a compact evidence bundle with the current path, Defender case, Challenger case, verification evidence, constraints, and requested output contract.
-   - Ask Claude to judge the algorithmic decision, not to continue the debate.
-   - Treat Claude's response as evidence for the final judge, not as the final answer.
+6. Select the external judge when requested.
+   - Use this step when the user asks for Claude, Codex, an external judge, a second model, or a judge-of-judge workflow.
+   - First identify the caller context from the runtime, system context, user request, or surrounding toolchain. Record it as `caller_model` when it is known.
+   - If the caller is Codex, OpenAI, or GPT-family, prefer Claude via the `call-claude` skill.
+   - If the caller is Claude or Anthropic-family, prefer Codex via the `call-codex` skill.
+   - If the caller is unknown, choose by decision type: use Claude for taste, design, writing, product judgment, UX, brand, narrative, naming, and human-preference questions; use Codex for deep logic, algorithms, correctness, invariants, architecture, debugging, tests, edge cases, data flow, concurrency, security, performance, and proof-like technical decisions.
+   - If the user explicitly names the external judge, honor that request unless the tool is unavailable.
+   - If the selected external judge skill is unavailable, state that it is unavailable and continue with the internal judge-of-judge rather than pretending to have cross-model signal.
 
-7. Run the judge-of-judge.
-   - Compare the Defender, Challenger, verification evidence, and Claude's judgment.
-   - Identify where Claude added a genuinely new angle, where it repeated known points, and where it made unsupported assumptions.
-   - Verify any testable claim from Claude before adopting it when feasible.
-   - Decide whether Claude's judgment changes the outcome, changes only the next check, or should be rejected.
+7. Call the selected external judge.
+   - Send a compact evidence bundle with the current path, Defender case, Challenger case, verification evidence, constraints, caller context, routing reason, and requested output contract.
+   - Ask the external judge to judge the decision, not to continue the debate.
+   - Treat the external judge's response as evidence for the final judge, not as the final answer.
 
-8. Judge with a rubric.
+8. Run the judge-of-judge.
+   - Compare the Defender, Challenger, verification evidence, and external judge's judgment.
+   - Identify where the external judge added a genuinely new angle, where it repeated known points, and where it made unsupported assumptions.
+   - Verify any testable claim from the external judge before adopting it when feasible.
+   - Decide whether the external judgment changes the outcome, changes only the next check, or should be rejected.
+
+9. Judge with a rubric.
    - Score the arguments against the user's stated priorities, not against eloquence or confidence.
    - Rotate or relabel argument order mentally to reduce position bias.
    - Penalize vague critique, untestable claims, and alternatives that do not preserve required behavior.
    - Reward evidence, concrete failure modes, simpler invariants, clear complexity wins, and cheap verification paths.
 
-9. Report the result.
+10. Report the result.
    - Lead with the verdict.
    - Include the decisive cruxes and evidence.
-   - Include the Claude judge result and judge-of-judge assessment when Claude was used.
+   - Include the external judge result, selected model, routing reason, and judge-of-judge assessment when an external judge was used.
    - State the recommended next action.
    - Include residual uncertainty only where it changes the next step.
 
@@ -83,13 +90,21 @@ You are the Path Challenger. Make the strongest truthful case against the curren
 
 You are the Judge. Decide between the current path, a modified version, the alternative path, or further investigation. Use the rubric and evidence. Do not reward verbosity. Identify the decisive crux, unresolved risks, and the cheapest discriminating check if the verdict is not fully settled.
 
+### External Judge
+
+You are the first external judge. Review the current path, Defender case, Challenger case, caller context, routing reason, and verification evidence. Bring a different angle where useful, but stay grounded in the supplied evidence. Decide keep, modify, replace, or investigate. Return the strongest missed risk, best concrete alternative, confidence, and the evidence that most affected your view.
+
 ### Claude External Judge
 
-You are Claude acting as the first external judge. Review the current path, Defender case, Challenger case, and verification evidence. Bring a different angle where useful, but stay grounded in the supplied evidence. Decide keep, modify, replace, or investigate. Return the strongest missed risk, best concrete alternative, confidence, and the evidence that most affected your view.
+You are Claude acting as the first external judge. Review the current path, Defender case, Challenger case, caller context, routing reason, and verification evidence. Bring taste, product, writing, UX, strategic, and human-preference nuance where relevant, but stay grounded in the supplied evidence. Decide keep, modify, replace, or investigate. Return the strongest missed risk, best concrete alternative, confidence, and the evidence that most affected your view.
+
+### Codex External Judge
+
+You are Codex acting as the first external judge. Review the current path, Defender case, Challenger case, caller context, routing reason, and verification evidence. Bring correctness, invariant, edge-case, implementation, architecture, and test-strategy rigor where relevant, but stay grounded in the supplied evidence. Decide keep, modify, replace, or investigate. Return the strongest missed risk, best concrete alternative, confidence, and the evidence that most affected your view.
 
 ### Judge-of-Judge
 
-You are the final judge-of-judge. Evaluate Claude's judgment alongside the Defender, Challenger, and verification evidence. Decide what Claude got right, what Claude missed or assumed, whether Claude changed the decision, and what the final action should be.
+You are the final judge-of-judge. Evaluate the selected external judge's judgment alongside the Defender, Challenger, and verification evidence. Decide what the external judge got right, what it missed or assumed, whether it changed the decision, and what the final action should be.
 
 ## Default Rubric
 
@@ -118,11 +133,11 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 **Best Challenge**
 <strongest evidence-backed objection and concrete alternative>
 
-**Claude Judge**
-<Claude's verdict and strongest useful point; write "not used" if Claude was unavailable or not requested>
+**External Judge**
+<caller context, selected model/tool, routing reason, verdict, and strongest useful point; write "not used" if unavailable or not requested>
 
 **Judge-of-Judge**
-<assessment of Claude's feedback against the evidence, including what changed or did not change>
+<assessment of the external judge's feedback against the evidence, including what changed or did not change>
 
 **Judge's Reasoning**
 <rubric-based comparison, decisive cruxes, and why the losing path loses>
@@ -136,7 +151,9 @@ Keep / Modify / Replace / Investigate: <one-sentence decision>
 - Do not let the Challenger merely complain. Require a concrete alternative or a concrete discriminating test.
 - Do not let the Defender claim "existing behavior" is enough without evidence that the behavior is intentional and complete.
 - Do not let the Judge decide from confidence, polish, length, or first-position advantage.
-- Do not let Claude's external judgment override direct evidence or tool-verifiable checks.
-- Do not discard Claude's feedback just because it disagrees with Codex; first identify whether it found a real crux.
+- Do not route to the same model family as the caller when a cross-model external judge is available.
+- Do not hide the routing basis. If caller context is unknown, say which domain heuristic selected the judge.
+- Do not let an external judgment override direct evidence or tool-verifiable checks.
+- Do not discard external feedback just because it disagrees with the caller; first identify whether it found a real crux.
 - Do not continue debate rounds after the disagreement has become testable.
 - Do not bury the decision below the debate details.

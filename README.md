@@ -8,10 +8,16 @@ The workflow adapts debate-style review into a practical engineering loop:
 - gather the evidence bundle
 - run a Defender and Challenger pass
 - verify testable claims
-- optionally ask Claude for an external judgment
+- choose a caller-aware external judge, using Claude or Codex when available
 - produce a final judge-of-judge verdict
 
-Use it for architecture decisions, ranking or recommendation algorithms, implementation approaches, data pipelines, scaling tradeoffs, or any path where one plausible answer may hide correctness, complexity, performance, or operational risks.
+Use it for architecture decisions, ranking or recommendation algorithms, implementation approaches, data pipelines, scaling tradeoffs, product judgment, design direction, or any path where one plausible answer may hide correctness, complexity, performance, product, or operational risks.
+
+When an external judge is requested, the skill now routes by caller context first:
+
+- Codex/OpenAI callers prefer Claude via `call-claude`
+- Claude/Anthropic callers prefer Codex via `call-codex`
+- unknown callers fall back to the decision type: Claude for taste/design/product judgment, Codex for deep logic/correctness/implementation rigor
 
 ## Install
 
@@ -24,7 +30,7 @@ cp -R judge-decision ~/.codex/skills/judge-decision
 Then invoke it in Codex with:
 
 ```text
-Use $judge-decision to challenge this approach and produce a final decision.
+Use $judge-decision to challenge this approach, choose the right external judge, and produce a final decision.
 ```
 
 ## Files
